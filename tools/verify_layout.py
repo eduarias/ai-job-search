@@ -18,7 +18,10 @@ failure below produces a clean compile, a correct page count, and a PDF that pas
   page ends early     A non-final page that stops well short of the bottom.
   final page thin     A last page mostly empty, which reads as an unfinished document.
   footer collision    Body text pushed into the page-number band, the usual result of
-                      rescuing a page with \\enlargethispage or a negative \\vspace.
+                      rescuing a page with a negative spacing hack. Only checked on pages
+                      that actually carry a page number: the stock Typst CV and cover
+                      letter have none, and their body legitimately runs into the
+                      bottom 90pt.
 
 Page count is deliberately NOT checked here: `tools/verify_pdf.py --pages` already does
 that, and CI runs it. Two implementations of one rule drift.
@@ -49,8 +52,8 @@ Usage:
 
 Exit codes: 0 clean, 1 layout problem, 2 bad invocation or no usable extractor.
 
-The shipped `cv/main_example.pdf` exits 1 by design: its placeholder page 2 is mostly
-empty, which is the thin-final-page failure the checklist asks you to fix before sending.
+The shipped `cv/main_example.pdf` is a one-page placeholder, so it exits 0: the thin-final-page
+rule only applies to the last page of a multi-page document.
 
 Tests live in tests/test_verify_layout.py and run against synthetic pages, so the
 suite needs neither Poppler nor a compiled PDF.
@@ -79,9 +82,14 @@ BOTTOM_LIMIT_FRACTION = 0.25
 LAST_PAGE_THIN_FRACTION = 0.35
 
 # The page-number footer lives in the bottom margin and is a text line like any other to
-# Poppler. Ignore this band when measuring the body, or every page looks like it has a
-# hole above its footer.
+# Poppler. A line in this band is footer only if it reads as a page number (see
+# PAGE_NUMBER_RE); other text there is body. A fixed cutoff alone is wrong for the stock
+# Typst CV, which has no page number and a 45pt bottom margin: its last body lines sit
+# at y755-y797 of 842, inside the band.
 FOOTER_BAND_PT = 90.0
+
+# A bare page label: "2", "2/3", "Page 2", "2 of 3".
+PAGE_NUMBER_RE = re.compile(r"^\W*(page\s*)?\d+(\s*(/|of)\s*\d+)?\W*$", re.IGNORECASE)
 
 # A line indented at least this far past the page's left edge is a bullet or a
 # continuation, not an entry header or a section heading.
@@ -99,11 +107,12 @@ LIST_MARKERS = frozenset("\u2022\u2023\u25aa\u25cf\u00b7")
 # Consecutive printed lines are ~12pt apart.
 SAME_PRINTED_LINE_PT = 3.0
 
-# A list sets its text in by a label's width: 11-25pt past the margin on the stock CV
-# and cover letter. A line whose text starts further in than this is set right or
-# centred (a running header, a date on a line of its own), not where a page's body
-# resumes.
-SET_IN_LIMIT_PT = 60.0
+# A list sets its text in by a label's width. On the stock Typst CV an entry's bullets
+# sit in the grid's right column: marker ~105pt and text ~117pt past the margin (the
+# date column plus gutter). A line whose text starts further in than this is set right
+# or centred (a running header, a date on a line of its own), not where a page's body
+# resumes; such headers start around 400pt in.
+SET_IN_LIMIT_PT = 130.0
 
 # A line this much taller than the body median is a section heading.
 HEADING_HEIGHT_RATIO = 1.25
@@ -137,9 +146,17 @@ class Page:
         self.lines = sorted(lines, key=lambda l: l.top)
 
     @property
+    def band_cutoff(self) -> float:
+        return self.height - FOOTER_BAND_PT
+
+    @staticmethod
+    def is_page_number(line: Line) -> bool:
+        return bool(PAGE_NUMBER_RE.match(line.text.strip()))
+
+    @property
     def body(self) -> list[Line]:
-        cutoff = self.height - FOOTER_BAND_PT
-        return [l for l in self.lines if l.top < cutoff]
+        cutoff = self.band_cutoff
+        return [l for l in self.lines if l.top < cutoff or not self.is_page_number(l)]
 
     @property
     def empty(self) -> bool:
@@ -160,9 +177,14 @@ class Page:
 
     @property
     def footer_crowded(self) -> bool:
-        """One line in the bottom band is a page number; two means body text spilled in."""
-        band = self.height - FOOTER_BAND_PT
-        return len({round(l.top, 1) for l in self.lines if l.top >= band}) > 1
+        """Body text sharing the bottom band with a page number.
+
+        A page with no page-number line cannot collide with one, so the stock Typst
+        pages, whose body runs into the band, are never crowded.
+        """
+        band = [l for l in self.lines if l.top >= self.band_cutoff]
+        has_number = any(self.is_page_number(l) for l in band)
+        return has_number and any(not self.is_page_number(l) for l in band)
 
     def is_indented(self, line: Line) -> bool:
         return line.left > self.left_edge + INDENT_PT
@@ -414,7 +436,7 @@ def report(path: Path, pages: list[Page]) -> list[str]:
         if page.footer_crowded:
             problems.append(
                 f"p{i} has body text inside the bottom margin band, colliding with the "
-                "footer; stop stretching the page with \\enlargethispage and cut content"
+                "page number; cut content instead of squeezing the page"
             )
         if i == len(pages) > 1 and share > LAST_PAGE_THIN_FRACTION:
             problems.append(

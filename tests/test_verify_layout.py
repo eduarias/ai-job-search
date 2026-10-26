@@ -1,7 +1,7 @@
 """Offline tests for tools/verify_layout.py.
 
 Every case is built from synthetic Page/Line geometry rather than a compiled
-PDF, so the suite needs neither Poppler nor a LaTeX toolchain - matching the
+PDF, so the suite needs neither Poppler nor a Typst toolchain - matching the
 repo's CI policy of keeping the Python tool tests self-contained.
 
 The cases marked SILENT FAILURE are the ones that motivated the tool: each
@@ -56,9 +56,23 @@ class TestFooterBand(unittest.TestCase):
     def test_single_line_in_band_is_just_the_page_number(self):
         self.assertFalse(Page(A4_HEIGHT, [line(50), line(800, text="2/2")]).footer_crowded)
 
-    def test_two_lines_in_band_means_body_text_spilled_in(self):
-        """SILENT FAILURE: \\enlargethispage pushing body text over the footer."""
-        self.assertTrue(Page(A4_HEIGHT, [line(50), line(780), line(800)]).footer_crowded)
+    def test_body_text_sharing_the_band_with_a_page_number_is_a_collision(self):
+        """SILENT FAILURE: a squeezed page pushing body text over the page number."""
+        self.assertTrue(
+            Page(A4_HEIGHT, [line(50), line(780, text="last body line"), line(800, text="2/2")]).footer_crowded
+        )
+
+    def test_body_in_the_band_without_a_page_number_is_not_a_collision(self):
+        """The stock Typst CV has no page number; its body runs to y~790 of 842."""
+        page = Page(A4_HEIGHT, [line(50), line(755, text="bullet"), line(776, text="Senior Engineer")])
+        self.assertFalse(page.footer_crowded)
+        self.assertEqual(round(page.bottom_space), 842 - 786)
+
+    def test_page_number_spellings(self):
+        for text in ("2", "2/3", "Page 2", "page 2 of 3", "- 2 -"):
+            self.assertTrue(Page.is_page_number(line(800, text=text)), text)
+        for text in ("2014-2016 Engineer", "Page layout", "Company 4"):
+            self.assertFalse(Page.is_page_number(line(800, text=text)), text)
 
 
 class TestHeadingAndIndentDetection(unittest.TestCase):
@@ -117,6 +131,64 @@ def at(top, left, text, text_left=None, bottom=None):
     bottom = top + 14.0 if bottom is None else bottom
     return Line(top=top, bottom=bottom, left=left, height=bottom - top, text=text,
                 text_left=text_left)
+
+
+class TestOrphansTypstCventryGeometry(unittest.TestCase):
+    """Geometry measured on a compiled `cv/main_example.typ` derivative (A4, 842pt).
+
+    The cventry grid right-aligns the date in a 3.2cm column (text starts x62-89), and the
+    title and bullets sit in the right column: a bullet's marker at x156, its text and
+    continuation lines at x168. The page has no page number and a 45pt bottom margin, so
+    its last body lines sit at y755-y776, inside the 90pt footer band.
+    """
+
+    @staticmethod
+    def at(top, left, text, text_left=None):
+        return Line(top=top, bottom=top + 10.0, left=left, height=10.0, text=text, text_left=text_left)
+
+    def test_header_at_the_foot_of_p1_with_its_bullets_on_p2_is_an_orphan(self):
+        p1 = Page(A4_HEIGHT, [
+            self.at(50, 51.0, "Professional Experience"),
+            self.at(742, 156.0, "\u2022 Delivered result 3", text_left=168.0),
+            self.at(755, 168.0, "improving reliability"),
+            self.at(776, 89.0, "2014-2016 Senior Engineer 4, Company 4"),
+        ])
+        p2 = Page(A4_HEIGHT, [
+            self.at(44, 156.0, "\u2022 Delivered result 0", text_left=168.0),
+            self.at(58, 168.0, "improving reliability"),
+        ])
+        self.assertTrue(any("orphaned from its bullets" in m for m in find_orphans([p1, p2])))
+
+    def test_clean_break_between_entries_reports_nothing(self):
+        p1 = Page(A4_HEIGHT, [
+            self.at(50, 51.0, "Professional Experience"),
+            self.at(755, 156.0, "\u2022 Delivered result 3", text_left=168.0),
+            self.at(768, 168.0, "improving reliability"),
+        ])
+        p2 = Page(A4_HEIGHT, [
+            self.at(44, 89.0, "2014-2016 Senior Engineer 4, Company 4"),
+            self.at(61, 156.0, "\u2022 Delivered result 0", text_left=168.0),
+        ])
+        self.assertEqual(find_orphans([p1, p2]), [])
+
+    def test_bullet_wrapping_across_the_break_is_not_an_orphan(self):
+        p1 = Page(A4_HEIGHT, [
+            self.at(50, 51.0, "Professional Experience"),
+            self.at(776, 156.0, "\u2022 Delivered result 3", text_left=168.0),
+        ])
+        p2 = Page(A4_HEIGHT, [self.at(44, 168.0, "improving reliability")])
+        self.assertEqual(find_orphans([p1, p2]), [])
+
+    def test_a_right_aligned_running_header_is_still_skipped(self):
+        p1 = Page(A4_HEIGHT, [
+            self.at(50, 51.0, "Professional Experience"),
+            self.at(776, 156.0, "\u2022 Delivered result 3", text_left=168.0),
+        ])
+        p2 = Page(A4_HEIGHT, [
+            self.at(27, 459.8, "[First] [Last] \u2013 CV"),
+            self.at(44, 168.0, "improving reliability"),
+        ])
+        self.assertEqual(find_orphans([p1, p2]), [])
 
 
 class TestOrphansReadTextX(unittest.TestCase):
