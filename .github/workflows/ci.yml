@@ -145,13 +145,21 @@ jobs:
         with:
           persist-credentials: false
       - name: Install Typst
-        # Pinned release binary; Typst is a single static executable.
+        # Pinned release binary, checksum-verified before it is extracted. Typst is a
+        # single static executable; it goes in RUNNER_TEMP because the runner user
+        # cannot write to /usr/local/bin. The digest is the release asset's sha256
+        # from the GitHub releases API; update it together with TYPST_VERSION.
         env:
-          TYPST_VERSION: v0.14.2
+          TYPST_VERSION: v0.15.1
+          TYPST_SHA256: a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c
         run: |
-          curl -fsSL "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz" \
-            | tar -xJ --strip-components=1 -C /usr/local/bin typst-x86_64-unknown-linux-musl/typst
-          typst --version
+          archive="$RUNNER_TEMP/typst.tar.xz"
+          curl -fsSL -o "$archive" "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz"
+          echo "${TYPST_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/typst-bin"
+          tar -xJf "$archive" --strip-components=1 -C "$RUNNER_TEMP/typst-bin" typst-x86_64-unknown-linux-musl/typst
+          echo "$RUNNER_TEMP/typst-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/typst-bin/typst" --version
       - name: Install PDF inspection tools
         run: |
           if ! command -v pdfinfo >/dev/null || ! command -v pdftotext >/dev/null; then
@@ -166,9 +174,12 @@ jobs:
         run: |
           python3 tools/verify_pdf.py cv/main_example.pdf --min-chars 100
           python3 tools/verify_pdf.py cover_letters/cover_example.pdf --min-chars 100
-      - name: Full-length CV holds 2 pages; cover letter name is centred
+      - name: Full-length CV holds 2 pages; cover letter name is centred (upstream template only)
+        if: github.repository == 'ai-job-search-dev/ai-job-search'
         # The placeholder CV is one page, so it cannot see a regression in the real
-        # two-page format. This fills the template with realistic content first.
+        # two-page format. This fills the template with realistic content first. It
+        # splices the stock CV between fixed markers, which a fork's /setup rewrites,
+        # so like the structure check below it only runs on the upstream template.
         run: python3 -m unittest tests.test_typst_two_page_cv tests.test_typst_cover_letter -v
       - name: Assert stock PDF structure (upstream template only)
         if: github.repository == 'ai-job-search-dev/ai-job-search'

@@ -31,6 +31,8 @@ SHAPES = [(7, 4), (5, 6)]
 
 def full_cv_source(roles: int, bullets: int) -> str:
     src = EXAMPLE_CV.read_text(encoding="utf-8")
+    if "// --- Most Recent Role ---" not in src or "#section[Education]" not in src:
+        raise unittest.SkipTest("cv/main_example.typ was personalized; the stock markers are gone")
     start = src.index("// --- Most Recent Role ---")
     end = src.index("#section[Education]")
     roles = "".join(

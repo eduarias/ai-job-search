@@ -82,14 +82,20 @@ BOTTOM_LIMIT_FRACTION = 0.25
 LAST_PAGE_THIN_FRACTION = 0.35
 
 # The page-number footer lives in the bottom margin and is a text line like any other to
-# Poppler. A line in this band is footer only if it reads as a page number (see
+# Poppler. A line in this band is footer only if it carries a page number (see
 # PAGE_NUMBER_RE); other text there is body. A fixed cutoff alone is wrong for the stock
 # Typst CV, which has no page number and a 45pt bottom margin: its last body lines sit
-# at y755-y797 of 842, inside the band.
+# at y755-y797 of 842, inside the band. A template whose footer has no page number
+# ("Jane Doe - CV") can pass --footer-in-band to treat the whole band as footer.
 FOOTER_BAND_PT = 90.0
 
-# A bare page label: "2", "2/3", "Page 2", "2 of 3".
-PAGE_NUMBER_RE = re.compile(r"^\W*(page\s*)?\d+(\s*(/|of)\s*\d+)?\W*$", re.IGNORECASE)
+# A page label, alone or inside a footer: "2", "- 2 -", "Page 2", "2/3", "2 of 3",
+# "Jane Doe - CV 1/2". A bare number is at most 3 digits, so a year ("2024") in the band
+# stays body text.
+PAGE_NUMBER_RE = re.compile(
+    r"^\W*\d{1,3}\W*$|^\W*page\s*\d+|\bpage\s*\d+\W*$|\d+\s*(?:/|of)\s*\d+\W*$",
+    re.IGNORECASE,
+)
 
 # A line indented at least this far past the page's left edge is a bullet or a
 # continuation, not an entry header or a section heading.
@@ -107,12 +113,13 @@ LIST_MARKERS = frozenset("\u2022\u2023\u25aa\u25cf\u00b7")
 # Consecutive printed lines are ~12pt apart.
 SAME_PRINTED_LINE_PT = 3.0
 
-# A list sets its text in by a label's width. On the stock Typst CV an entry's bullets
-# sit in the grid's right column: marker ~105pt and text ~117pt past the margin (the
-# date column plus gutter). A line whose text starts further in than this is set right
-# or centred (a running header, a date on a line of its own), not where a page's body
-# resumes; such headers start around 400pt in.
-SET_IN_LIMIT_PT = 130.0
+# A list sets its text in by a label's width: 11-25pt past the margin on the stock LaTeX
+# CV and cover letter. A line whose text starts further in than this is set right or
+# centred (a running header, a date on a line of its own), not where a page's body
+# resumes. A template whose bullets sit further in (the stock Typst CV's entry grid puts
+# them ~117pt in, past its date column) widens the limit for that document only: see
+# `set_in_limit`.
+SET_IN_LIMIT_PT = 60.0
 
 # A line this much taller than the body median is a section heading.
 HEADING_HEIGHT_RATIO = 1.25
@@ -141,9 +148,11 @@ class Line:
 
 
 class Page:
-    def __init__(self, height: float, lines: list[Line]):
+    def __init__(self, height: float, lines: list[Line], band_is_footer: bool = False):
         self.height = height
         self.lines = sorted(lines, key=lambda l: l.top)
+        # Legacy rule (--footer-in-band): every line in the bottom band is footer.
+        self.band_is_footer = band_is_footer
 
     @property
     def band_cutoff(self) -> float:
@@ -151,11 +160,13 @@ class Page:
 
     @staticmethod
     def is_page_number(line: Line) -> bool:
-        return bool(PAGE_NUMBER_RE.match(line.text.strip()))
+        return bool(PAGE_NUMBER_RE.search(line.text.strip()))
 
     @property
     def body(self) -> list[Line]:
         cutoff = self.band_cutoff
+        if self.band_is_footer:
+            return [l for l in self.lines if l.top < cutoff]
         return [l for l in self.lines if l.top < cutoff or not self.is_page_number(l)]
 
     @property
@@ -183,6 +194,8 @@ class Page:
         pages, whose body runs into the band, are never crowded.
         """
         band = [l for l in self.lines if l.top >= self.band_cutoff]
+        if self.band_is_footer:
+            return len({round(l.top, 1) for l in band}) > 1
         has_number = any(self.is_page_number(l) for l in band)
         return has_number and any(not self.is_page_number(l) for l in band)
 
@@ -247,7 +260,7 @@ def find_pdftotext() -> str | None:
     return candidates[0]
 
 
-def parse_pdf(path: Path) -> list[Page]:
+def parse_pdf(path: Path, band_is_footer: bool = False) -> list[Page]:
     binary = find_pdftotext()
     if not binary:
         raise RuntimeError("pdftotext (Poppler) not found; install poppler-utils")
@@ -297,7 +310,7 @@ def parse_pdf(path: Path) -> list[Page]:
             )
             for words in buckets.values()
         ]
-        pages.append(Page(float(h), lines))
+        pages.append(Page(float(h), lines, band_is_footer))
     return pages
 
 
@@ -307,6 +320,19 @@ def text_start(words: list[tuple[float, float, float, str]]) -> float | None:
     while lead < len(words) and words[lead][3] and set(words[lead][3]) <= LIST_MARKERS:
         lead += 1
     return words[lead][0] if 0 < lead < len(words) else None
+
+
+def set_in_limit(body_lines: list[Line], doc_left: float) -> float:
+    """How far in a line's text may start and still be where a page's body resumes.
+
+    SET_IN_LIMIT_PT, widened to this document's own list indent when its bullets sit
+    further in (the stock Typst CV's entry grid), so one document's geometry never
+    loosens the rule for another.
+    """
+    bullet_x = sorted(l.text_left for l in body_lines if l.text_left is not None)
+    if not bullet_x:
+        return SET_IN_LIMIT_PT
+    return max(SET_IN_LIMIT_PT, bullet_x[len(bullet_x) // 2] - doc_left + INDENT_PT)
 
 
 def printed_text_x(lines: list[Line]) -> float | None:
@@ -352,6 +378,8 @@ def find_orphans(pages: list[Page]) -> list[str]:
     def indented(line: Line) -> bool:
         return line.left > doc_left + INDENT_PT
 
+    in_limit = set_in_limit(body_lines, doc_left)
+
     for i in range(len(pages) - 1):
         here, nxt = pages[i], pages[i + 1]
         if here.empty or nxt.empty:
@@ -385,7 +413,7 @@ def find_orphans(pages: list[Page]) -> list[str]:
             (
                 l
                 for l in nxt.body
-                if TEXT_RE.search(l.text) and l.text_x <= doc_left + SET_IN_LIMIT_PT
+                if TEXT_RE.search(l.text) and l.text_x <= doc_left + in_limit
             ),
             None,
         )
@@ -398,7 +426,8 @@ def find_orphans(pages: list[Page]) -> list[str]:
             problems.append(
                 f"p{i + 1} ends on {shown.text.strip()[:60]!r} while the text on p{i + 2} "
                 f"starts further in ({opener.text.strip()[:60]!r}): an entry header is "
-                "orphaned from its bullets. Wrap that entry in #block(breakable: false), "
+                "orphaned from its bullets. Keep that entry together (Typst: use the stock "
+                "cventry, or wrap it in #block(breakable: false); LaTeX: \\needspace before it), "
                 "or shorten it"
             )
     return problems
@@ -465,6 +494,12 @@ def main() -> int:
     _force_utf8_output()
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pdf", nargs="?", type=Path)
+    ap.add_argument(
+        "--footer-in-band",
+        action="store_true",
+        help="treat every line in the bottom 90pt as footer, for templates whose footer "
+        "carries no page number (by default only lines with a page number are footer)",
+    )
     args = ap.parse_args()
 
     if not args.pdf:
@@ -474,7 +509,7 @@ def main() -> int:
         return 2
 
     try:
-        pages = parse_pdf(args.pdf)
+        pages = parse_pdf(args.pdf, args.footer_in_band)
     except RuntimeError as exc:
         print(f"skipped: {exc}", file=sys.stderr)
         return 2

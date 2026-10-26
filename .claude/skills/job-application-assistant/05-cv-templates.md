@@ -28,9 +28,10 @@ Copy `cv/main_example.typ` and edit it. Its shape:
 
 ```typst
 #let accent = rgb("#3973af")
+#let lang = "en"   // CV language code: hyphenation and quote rules
 #set document(title: "[YOUR_NAME] - CV", author: "[YOUR_NAME]")
 #set page(paper: "a4", margin: (x: 1.8cm, top: 1.6cm, bottom: 1.6cm))
-#set text(font: ("Lato", "Liberation Sans", "DejaVu Sans"), size: 10.5pt, lang: "en")
+#set text(font: ("Lato", "Liberation Sans", "DejaVu Sans"), size: 10.5pt, lang: lang)
 
 #let section(title) = ...   // accent-coloured heading with a rule, sticky to the next block
 #let cventry(dates, title, org, place, body) = block(breakable: true, ...)    // dates-left grid; the title block is sticky
@@ -55,7 +56,7 @@ Entries are written `#cventry("YYYY-YYYY", "Role Title", "Organization", "Locati
 
 ### Section headings must match the CV's language (important)
 
-Section headings such as `#section[Core Competencies]`, `Professional Experience`, `Education`, `Languages`, `Publications`, `Honors and Awards`, `References` (and any others your template defines), plus the `Available upon request.` line under References, are all **literal English text baked into the template** - they do not translate themselves. Whenever the CV language (see `CV language` in the candidate profile) is not English, translate every one of these too, whatever they are, not just the body prose - a CV with a fully localized profile statement and bullets sitting under untouched English section headers reads as sloppy and inconsistent, and it's an easy thing to forget precisely because the prose translation is the obvious, visible part of the job. Worked example for Spanish: `Competencias Clave`, `Experiencia Profesional`, `Educación`, `Idiomas`, `Publicaciones`, `Distinciones y Premios`, `Referencias`, `Disponibles a solicitud.` Also set `lang:` in `#set text(...)` to the CV language code (e.g. `"es"`). The same rule applies for any other target language - check this explicitly during the verification pass.
+Section headings such as `#section[Core Competencies]`, `Professional Experience`, `Education`, `Languages`, `Publications`, `Honors and Awards`, `References` (and any others your template defines), plus the `Available upon request.` line under References, are all **literal English text baked into the template** - they do not translate themselves. Whenever the CV language (see `CV language` in the candidate profile) is not English, translate every one of these too, whatever they are, not just the body prose - a CV with a fully localized profile statement and bullets sitting under untouched English section headers reads as sloppy and inconsistent, and it's an easy thing to forget precisely because the prose translation is the obvious, visible part of the job. Worked example for Spanish: `Competencias Clave`, `Experiencia Profesional`, `Educación`, `Idiomas`, `Publicaciones`, `Distinciones y Premios`, `Referencias`, `Disponibles a solicitud.` Also change `#let lang = "en"` at the top of the file to the CV language code (e.g. `"es"`), so hyphenation and quote rules match. The same rule applies for any other target language - check this explicitly during the verification pass.
 
 ## Section-by-Section Tailoring
 

@@ -9,9 +9,10 @@
 #let body-font = (font: "Raleway", weight: 500, size: 11pt)
 
 // Page + base text setup. Wrap the whole letter: #show: cover
-#let cover(body) = {
+// `lang` sets hyphenation and quote rules: #show: cover.with(lang: "es") for a Spanish letter.
+#let cover(body, lang: "en") = {
   set page(paper: "a4", margin: 2.3cm)
-  set text(font: "Lato", weight: "light", fill: primary, size: 11pt, lang: "en")
+  set text(font: "Lato", weight: "light", fill: primary, size: 11pt, lang: lang)
   set par(leading: 0.65em, spacing: 1.2em, justify: false)
   set list(indent: 0.4em, body-indent: 0.6em, spacing: 0.6em)
   // Lists use the same Raleway body font as lettercontent, so a plain `- item` list

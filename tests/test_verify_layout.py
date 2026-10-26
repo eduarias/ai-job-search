@@ -69,10 +69,27 @@ class TestFooterBand(unittest.TestCase):
         self.assertEqual(round(page.bottom_space), 842 - 786)
 
     def test_page_number_spellings(self):
-        for text in ("2", "2/3", "Page 2", "page 2 of 3", "- 2 -"):
+        for text in ("2", "2/3", "Page 2", "page 2 of 3", "- 2 -", "Jane Doe - CV 1/2", "CV - page 2"):
             self.assertTrue(Page.is_page_number(line(800, text=text)), text)
-        for text in ("2014-2016 Engineer", "Page layout", "Company 4"):
+        for text in ("2014-2016 Engineer", "Page layout", "Company 4", "2024", "Improved 3 of 5 services"):
             self.assertFalse(Page.is_page_number(line(800, text=text)), text)
+
+    def test_a_footer_carrying_a_name_and_page_number_is_still_footer(self):
+        """A custom template's "Jane Doe - CV 1/2" must not count as body text."""
+        page = Page(A4_HEIGHT, [line(50), line(400), line(800, text="Jane Doe - CV 1/2")])
+        self.assertEqual(round(page.bottom_space), 432)
+        self.assertFalse(page.footer_crowded)
+
+    def test_a_year_in_the_band_is_body_not_a_page_number(self):
+        page = Page(A4_HEIGHT, [line(50), line(780, text="2024")])
+        self.assertEqual([l.text for l in page.body], ["x", "2024"])
+
+    def test_footer_in_band_restores_the_legacy_rule_for_footers_without_a_number(self):
+        lines = [line(50), line(770, text="Jane Doe - CV"), line(800, text="jane@example.com")]
+        self.assertFalse(Page(A4_HEIGHT, lines).footer_crowded)  # default: no page number, no collision
+        legacy = Page(A4_HEIGHT, lines, band_is_footer=True)
+        self.assertEqual(len(legacy.body), 1, "every band line is footer under the legacy rule")
+        self.assertTrue(legacy.footer_crowded)
 
 
 class TestHeadingAndIndentDetection(unittest.TestCase):
@@ -187,6 +204,32 @@ class TestOrphansTypstCventryGeometry(unittest.TestCase):
         p2 = Page(A4_HEIGHT, [
             self.at(27, 459.8, "[First] [Last] \u2013 CV"),
             self.at(44, 168.0, "improving reliability"),
+        ])
+        self.assertEqual(find_orphans([p1, p2]), [])
+
+
+class TestIndentLimitIsPerDocument(unittest.TestCase):
+    """The Typst CV's deep bullet indent must not loosen the rule for other templates."""
+
+    def test_latex_style_geometry_keeps_the_tight_limit(self):
+        from tools.verify_layout import SET_IN_LIMIT_PT, set_in_limit
+        bullets = [Line(top=60, bottom=70, left=58.9, height=10, text="\u2022 x", text_left=72.1)]
+        self.assertEqual(set_in_limit(bullets, 59.5), SET_IN_LIMIT_PT)
+
+    def test_typst_style_geometry_widens_the_limit_for_that_document(self):
+        from tools.verify_layout import SET_IN_LIMIT_PT, set_in_limit
+        bullets = [Line(top=60, bottom=70, left=156, height=10, text="\u2022 x", text_left=168)]
+        self.assertGreater(set_in_limit(bullets, 51.0), SET_IN_LIMIT_PT)
+
+    def test_a_set_in_date_line_is_not_a_resume_point_on_a_latex_style_document(self):
+        """A date at x130 on a line of its own, then the real header: no false orphan."""
+        p1 = Page(A4_HEIGHT, [
+            Line(top=50, bottom=60, left=59.5, height=10, text="Professional Experience"),
+            Line(top=700, bottom=710, left=58.9, height=10, text="\u2022 a bullet", text_left=72.1),
+        ])
+        p2 = Page(A4_HEIGHT, [
+            Line(top=50, bottom=60, left=130.0, height=10, text="June 2020"),
+            Line(top=70, bottom=80, left=59.5, height=10, text="Next Role"),
         ])
         self.assertEqual(find_orphans([p1, p2]), [])
 

@@ -121,7 +121,8 @@ Typst markup treats a few characters specially. Escape them with a backslash whe
 
 ### Non-English Cover Letters
 - Same template structure, just write content in the posting's language
-- Adjust date format to local convention
+- Set the language code: `#show: cover.with(lang: "es")` (hyphenation and quote rules follow it)
+- Write the date as text in the local format instead of `datetime.today().display(...)`: Typst's date formatting always uses English month names
 - Adjust closing to local convention (e.g. "Med venlig hilsen," for Danish)
 
 ## Checklist Before Finalizing

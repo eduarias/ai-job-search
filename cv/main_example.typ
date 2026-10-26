@@ -6,10 +6,11 @@
 // Compile from the repo root: typst compile --font-path cover_letters/OpenFonts/fonts cv/main_example.typ
 
 #let accent = rgb("#3973af") // moderncv "blue"
+#let lang = "en" // CV language code ("es", "da", ...): hyphenation and quote rules
 
 #set document(title: "[YOUR_NAME] - CV", author: "[YOUR_NAME]")
 #set page(paper: "a4", margin: (x: 1.8cm, top: 1.6cm, bottom: 1.6cm))
-#set text(font: ("Lato", "Liberation Sans", "DejaVu Sans"), size: 10.5pt, lang: "en")
+#set text(font: ("Lato", "Liberation Sans", "DejaVu Sans"), size: 10.5pt, lang: lang)
 #set par(leading: 0.6em, spacing: 0.7em, justify: false)
 #set list(indent: 0.3em, body-indent: 0.5em, spacing: 0.45em)
 #show link: set text(fill: blue)
