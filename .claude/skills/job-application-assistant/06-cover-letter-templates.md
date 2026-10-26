@@ -4,124 +4,85 @@ framework_version: 1.0.2
 
 # Cover Letter Templates and Tailoring Guide
 
-## Template: Custom cover.cls (XeLaTeX)
+## Template: Typst (`cover.typ`)
 
-Cover letters use a custom LaTeX document class (`cover.cls`) with Lato/Raleway fonts.
+Cover letters use a Typst template (`cover_letters/cover.typ`) with Lato/Raleway fonts.
 
-**Output file:** `cover_letters/cover_<company>_<role>.tex`
-**Compile with:** XeLaTeX (cover.cls requires fontspec)
+**Output file:** `cover_letters/cover_<company>_<role>.typ`
+**Compile with:** `typst compile` from the repo root, with the bundled fonts on the font path
 **Font directory:** `cover_letters/OpenFonts/fonts/`
+**Master reference:** `cover_letters/cover_example.typ`
 
 ### Compile command
 
 ```bash
-cd cover_letters && xelatex -interaction=nonstopmode cover_<company>_<role>.tex
+typst compile --font-path cover_letters/OpenFonts/fonts cover_letters/cover_<company>_<role>.typ
 ```
 
-Expected output: `Output written on cover_<company>_<role>.pdf (1 page, ...)`. Any page count other than 1 is a failure that must be fixed before presenting to the user.
+The PDF lands next to the source. Confirm the page count with `python3 tools/verify_pdf.py cover_letters/cover_<company>_<role>.pdf --pages 1`; any count other than 1 is a failure that must be fixed before presenting to the user. A snap-installed Typst cannot write outside the home directory, so keep output inside the repo.
 
 ## Compile-and-Inspect Loop (MANDATORY)
 
 After writing the cover letter and before presenting to the user, always compile and visually inspect the PDF. Iterate until the layout is clean:
 
-1. Run `xelatex -interaction=nonstopmode cover_<company>_<role>.tex`
+1. Run the compile command above
 2. Confirm page count is exactly 1 and compile succeeded
 3. Read the PDF via the Read tool and visually check: signature fits at the bottom, no text cut off, bullet font matches body
 
-### Known template pitfall: itemize inside `\lettercontent{}`
+### Bullet lists
 
-The `\lettercontent{}` macro appends `\\` to its argument. This breaks when the argument ends in `\end{itemize}` because `\\` has no line to break after the environment closes, producing `! LaTeX Error: There's no line here to end.` and no PDF output.
-
-**Wrong (breaks compile):**
-```latex
-\lettercontent{Here is how my experience maps:
-\begin{itemize}
-    \item ...
-\end{itemize}}
-```
-
-**Correct — close `\lettercontent{}` before the list and wrap the list in the matching Raleway-Medium font so typography stays consistent:**
-```latex
-\lettercontent{Here is how my experience maps:}
-
-{\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont
-\begin{itemize}
-    \item ...
-\end{itemize}\par}
-\vspace{6pt}
-
-\lettercontent{[next paragraph]}
-```
-
-The font wrapper is mandatory — if you just move `\begin{itemize}` outside `\lettercontent{}` without the `\fontspec` block, bullets render in the default body font (Lato) and visually mismatch the rest of the letter.
+Use the `bullets(...)` helper from `cover.typ`: it takes one content argument per bullet and renders them in the same Raleway-Medium body font as `lettercontent`. A bare `- item` list outside the helper falls back to the default Lato body font and visually mismatches the rest of the letter.
 
 ## Document Structure
 
-```latex
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Cover Letter - [Company], [Role]
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+```typst
+// Cover Letter - [Company], [Role]
+#import "cover.typ": *
+#show: cover
 
-\documentclass[]{cover}
-\usepackage{fancyhdr}
+#namesection("", "[YOUR_NAME]",
+  [#link("mailto:[YOUR_EMAIL]")[[YOUR_EMAIL]] | [YOUR_PHONE] | #link("[YOUR_LINKEDIN_URL]")[LinkedIn]])
 
-\pagestyle{fancy}
-\fancyhf{}
+#currentdate(datetime.today().display("[month repr:long] [day], [year]"))
 
-\rfoot{Page \thepage \hspace{0pt}}
-\thispagestyle{empty}
-\renewcommand{\headrulewidth}{0pt}
-\begin{document}
+#lettercontent[Dear [Name/Team],]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     TITLE NAME
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\namesection{}{\Huge{[YOUR_NAME]}}{  \href{mailto:[YOUR_EMAIL]}{[YOUR_EMAIL]} | [YOUR_PHONE] |  \urlstyle{same}\href{[YOUR_LINKEDIN_URL]}{LinkedIn}
-}
+#lettercontent[[Opening paragraph - role, connection to background, 2-3 sentences]]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     MAIN COVER LETTER CONTENT
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#lettercontent[[Body paragraph - most relevant experience, introducing the bullet list]]
 
-\currentdate{\today}
-\lettercontent{Dear [Name/Team],}
+#bullets(
+  [[Concrete achievement/skill 1]],
+  [[Concrete achievement/skill 2]],
+  [[Concrete achievement/skill 3]],
+)
+#v(6pt)
 
-\lettercontent{[Opening paragraph - role, connection to background, 2-3 sentences]}
+#lettercontent[[Connection to company - why this role, why this company specifically]]
 
-\lettercontent{[Body paragraph - most relevant experience, introducing the bullet list]}
+#lettercontent[[Personal fit paragraph - behavioral strengths, team contribution, 2-3 sentences]]
 
-{\raggedright\fontspec[Path = OpenFonts/fonts/raleway/]{Raleway-Medium}\fontsize{11pt}{13pt}\selectfont
-\begin{itemize}
-    \item {[Concrete achievement/skill 1]}
-    \item {[Concrete achievement/skill 2]}
-    \item {[Concrete achievement/skill 3]}
-\end{itemize}\par}
+#lettercontent[I look forward to hearing from you.]
 
-\lettercontent{[Connection to company - why this role, why this company specifically]}
-
-\lettercontent{[Personal fit paragraph - behavioral strengths, team contribution, 2-3 sentences]}
-
-\lettercontent{I look forward to hearing from you.}
-
-\begin{flushright}
-% No trailing \\ inside \closing{} - cover.cls appends its own \\, and a
-% doubled break triggers "! LaTeX Error: There's no line here to end."
-\closing{Kind regards,}
-
-\signature{[YOUR_NAME]}
-\end{flushright}
-\end{document}
+#align(right, block(breakable: false)[
+  #closing[Kind regards,]
+  #v(1.2em)
+  #signature[[YOUR_NAME]]
+])
 ```
+
+The closing block is unbreakable so the signature can never be stranded on a second page.
 
 ## Key Commands Reference
 
 | Command | Purpose |
 |---------|---------|
-| `\namesection{}{Name}{contact info}` | Header with name and contact |
-| `\currentdate{date}` | Date field (use `\today` or explicit date) |
-| `\lettercontent{text}` | Body paragraph (adds spacing after) |
-| `\closing{text}` | Closing line |
-| `\signature{name}` | Printed name below signature |
+| `#namesection(first, last, contact)` | Header with name and contact |
+| `#currentdate(date)` | Date field (use `datetime.today().display(...)` or an explicit date) |
+| `#lettercontent[text]` | Body paragraph (adds spacing after) |
+| `#bullets(..items)` | Bullet list in the body font |
+| `#closing[text]` | Closing line |
+| `#signature[name]` | Printed name below the closing |
 
 ## Tailoring Guidelines
 
@@ -133,27 +94,30 @@ The font wrapper is mandatory — if you just move `\begin{itemize}` outside `\l
 ### Length - Hard 1-Page Limit
 - Target: 1 page including signature block
 - Maximum: **never exceed 1 page**
-- **Word budget: 250-300 words** of body text (not counting LaTeX markup). This is the safe maximum. 350 words will overflow.
+- **Word budget: 250-300 words** of body text (not counting Typst markup). This is the safe maximum. 350 words will overflow.
 - **Always count**: opening paragraph + bullet list paragraph + closing paragraph = 3 blocks. Add a 4th only if the others are short.
 - When adding company-specific content, trim other content to compensate rather than adding net length
 
 ### Line Spacing
-- Add `\usepackage{setspace}` and `\setstretch{1.0}` if the letter is long and needs to fit on one page
-- Use `\vspace{.5cm}` between major sections for readability (only if space permits)
+- Never shrink margins or leading to force a fit; trim text instead
+- Use `#v(6pt)` between blocks only if space permits
 
 ### Bullet Lists
-- Place `\begin{itemize}...\end{itemize}` **outside** a `\lettercontent{}` block (see "Known template pitfall" above), wrapped in the matching Raleway-Medium `\fontspec` so the bullet font matches the body
+- Use the `bullets(...)` helper (see "Bullet lists" above) so the bullet font matches the body
 - 3-5 bullets is ideal
 - Start each bullet with bold label or action verb
-- Use `\textbf{Label:}` for category-style bullets
-- A bullet whose text begins with a literal `[` must be braced: `\item {[text]}`. Unbraced, LaTeX parses `[text]` as `\item`'s optional label and renders it off the left page edge, missing from the PDF text layer entirely
+- Use `*Label:*` for category-style bullets
+- A bullet or paragraph that begins with a literal `[` must be wrapped in its own content brackets, e.g. `[[text]]`; bare brackets in a content block must stay balanced
 
-### LaTeX Special Characters
-Escape these wherever they appear in body text:
-- Ampersand: `\&` (company names: Brüel \& Kjær, H\&M) - unescaped, the compile fails loudly
-- Percent: `\%` ("grew revenue 30\%") - unescaped, it does **not** fail: everything after the `%` on that line is silently eaten as a LaTeX comment
-- Dollar: `\$`, hash: `\#`, underscore: `\_`
-- Tilde: `\textasciitilde{}`, caret: `\textasciicircum{}`, backslash: `\textbackslash{}`
+### Typst Special Characters
+Typst markup treats a few characters specially. Escape them with a backslash wherever they appear in body text:
+- `@` as `\@`: an unescaped `@` starts a reference, so `jane@example.com` fails to compile ("label does not exist"). Use `#link("mailto:...")[jane\@example.com]`
+- `#` as `\#` ("ranked \#1", C\#): an unescaped `#` starts code
+- `$` as `\$` (salary and cost figures): an unescaped `$` opens math mode, and an unclosed one fails the compile
+- `*` and `_` as `\*` and `\_` when literal: they toggle bold and italic, and an unpaired one silently changes the rest of the paragraph
+- `<` as `\<` before a name and `` ` `` as `` \` ``: they open labels and raw text
+- `%` and `&` need no escaping in Typst (company names like Brüel & Kjær and "30%" are safe)
+- `--` renders as an en-dash and `---` as an em-dash (the no-em-dash rule below still applies)
 
 ### Non-English Cover Letters
 - Same template structure, just write content in the posting's language
@@ -168,7 +132,7 @@ Escape these wherever they appear in body text:
 - [ ] Motivation section references this specific company's mission/values
 - [ ] Company name and role are correct throughout
 - [ ] Date is current
-- [ ] Fits on one page
+- [ ] Fits on one page (compiled, not estimated)
 - [ ] Language matches the job posting language
 - [ ] Salutation is appropriate (named person if possible)
 - [ ] Headline is engaging and specific, not generic

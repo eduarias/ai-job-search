@@ -173,7 +173,7 @@ Insert (or replace, if one exists) this block immediately after the file's H1 ti
 Rules:
 
 - Exactly **one** managed block per guidance file. Replace the whole block between the `BEGIN`/`END` markers when switching templates; never stack blocks.
-- **`--use default`**: remove the managed block entirely. The stock moderncv / cover.cls guidance below it is untouched and takes over again.
+- **`--use default`**: remove the managed block entirely. The stock Typst template guidance below it is untouched and takes over again.
 - Do not modify anything outside the markers.
 
 ---
@@ -191,7 +191,7 @@ Present a summary:
 > Useful follow-ups:
 > - `/add-template --list` — see all registered templates
 > - `/add-template --use <other-name>` — switch templates
-> - `/add-template --use default` — go back to the stock <moderncv | cover.cls> template
+> - `/add-template --use default` — go back to the stock Typst template
 
 ---
 

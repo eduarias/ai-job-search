@@ -7,7 +7,7 @@ checked by looking at the rendered page, which is exactly how they get missed. E
 failure below produces a clean compile, a correct page count, and a PDF that passes
 `tools/verify_pdf.py`:
 
-  orphaned entry      A moderncv \\cventry renders as a tabular, so a job entry is one
+  orphaned entry      A Typst `cventry` is an unbreakable block, so a job entry is one
                       unbreakable block. When it does not fit, the whole entry moves to
                       the next page - or its header lands at the bottom of one page with
                       the bullets resuming on the next. CLAUDE.md calls this "the most
@@ -38,7 +38,7 @@ as a font-size proxy to spot section headings. An orphaned entry header is found
 each line's TEXT starts, after any list marker merged into it, not by its left edge (see
 `find_orphans`).
 
-The thresholds below are calibrated for the stock moderncv (`cv/`) and cover.cls
+The thresholds below are calibrated for the stock Typst CV (`cv/`) and cover.typ
 (`cover_letters/`) geometry. A template registered via `/add-template` may need them
 retuned - an article-class page number sitting outside the 90pt footer band, for
 instance, is read as body text and turns the space above it into a phantom hole.
@@ -347,7 +347,7 @@ def find_orphans(pages: list[Page]) -> list[str]:
         tail = [l for l in here.body if l.top >= last.top - SAME_PRINTED_LINE_PT]
         last_x = printed_text_x(tail)
         if last_x is None:
-            # moderncv puts an itemize marker in its own bbox line at the list's left
+            # a list renderer may put a bullet marker in its own bbox line at the list's left
             # edge, so a list item split across the break looks like an un-indented
             # header followed by indented text. Different defect, different fix.
             if not indented(last) and indented(first):
@@ -376,7 +376,7 @@ def find_orphans(pages: list[Page]) -> list[str]:
             problems.append(
                 f"p{i + 1} ends on {shown.text.strip()[:60]!r} while the text on p{i + 2} "
                 f"starts further in ({opener.text.strip()[:60]!r}): an entry header is "
-                "orphaned from its bullets. Add \\needspace before that \\cventry, "
+                "orphaned from its bullets. Wrap that entry in #block(breakable: false), "
                 "or shorten it"
             )
     return problems
@@ -403,7 +403,7 @@ def report(path: Path, pages: list[Page]) -> list[str]:
         if gap > GAP_LIMIT_PT:
             problems.append(
                 f"p{i} has a {gap:.0f}pt hole at y{gap_y:.0f} (~{gap / 14:.0f} blank lines). "
-                "A moderncv \\cventry is an unbreakable tabular: shorten the entry that "
+                "A cventry is an unbreakable block: shorten the entry that "
                 "follows the hole so it fits, or move a shorter section above it"
             )
         if i < len(pages) and share > BOTTOM_LIMIT_FRACTION:

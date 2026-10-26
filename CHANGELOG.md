@@ -13,6 +13,7 @@ per-file diff commands.
 
 ## [Unreleased]
 
+
 ### Added
 
 - **CI runs the Python suite on Windows** (`.github/workflows/ci.yml` `python-tests-windows`) - every
@@ -24,6 +25,7 @@ per-file diff commands.
   CI. The five Linux legs keep their names, so required checks are unchanged.
 
 ### Changed
+- **Stock CV and cover letter templates are now Typst, not LaTeX.** `cv/main_example.typ`, `cover_letters/cover.typ` and `cover_example.typ` replace `main_example.tex`, `cover.cls` and `cover_example.tex`. Compile with `typst compile` (the cover letter with `--font-path cover_letters/OpenFonts/fonts`); no TeX distribution is needed. `/apply`, `/setup`, `/reset`, the template guides (`05`, `06`), the CI smoke job (`typst-smoke`), the `.gitignore` negations and the security guards all follow. Forks that kept a LaTeX template can register it with `/add-template`; existing `.tex` drafts still work as reference input. The placeholder CV example is now 1 page; a tailored CV must still be exactly 2.
 
 - **The repository moved to the `ai-job-search-dev` organization** - the canonical URL is now
   `https://github.com/ai-job-search-dev/ai-job-search`. GitHub redirects the old
