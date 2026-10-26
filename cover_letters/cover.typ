@@ -21,9 +21,15 @@
 }
 
 // Name block. `first` renders hairline, `last` light; `contact` sits underneath.
+// Pass "" as `first` to set the whole name in one light run: a separate empty run
+// would add a stray space and push the name off-centre.
 #let namesection(first, last, contact) = align(center)[
-  #text(font: "Lato", size: 40pt, weight: "thin")[#first]
-  #text(font: "Lato", size: 40pt, weight: "light")[#last]
+  #let name-run(weight, c) = text(font: "Lato", size: 40pt, weight: weight)[#c]
+  #if first in ("", []) {
+    name-run("light", last)
+  } else {
+    name-run("thin", first) + [ ] + name-run("light", last)
+  }
   #v(2pt)
   #text(..body-font, fill: headings)[#contact]
   #v(10pt)
