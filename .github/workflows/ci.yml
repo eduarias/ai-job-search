@@ -166,9 +166,13 @@ jobs:
         run: |
           python3 tools/verify_pdf.py cv/main_example.pdf --min-chars 100
           python3 tools/verify_pdf.py cover_letters/cover_example.pdf --min-chars 100
+      - name: Full-length CV holds exactly 2 pages with a clean layout
+        # The placeholder CV is one page, so it cannot see a regression in the real
+        # two-page format. This fills the template with realistic content first.
+        run: python3 -m unittest tests.test_typst_two_page_cv -v
       - name: Assert stock PDF structure (upstream template only)
         if: github.repository == 'ai-job-search-dev/ai-job-search'
-        # The placeholder CV is short; a real tailored CV must still be exactly 2 pages.
+        # The placeholder CV is short; the full-length 2-page check is the step above.
         run: |
           python3 tools/verify_pdf.py cv/main_example.pdf \
             --pages 1 \
