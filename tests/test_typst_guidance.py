@@ -45,12 +45,17 @@ class TestExampleDocumentsExist(unittest.TestCase):
         for path in (EXAMPLE_CV, EXAMPLE_COVER, REPO / "cover_letters" / "cover.typ"):
             self.assertTrue(path.is_file(), f"{path} must exist")
 
-    def test_example_cv_entries_are_unbreakable(self):
+    def test_example_cv_entries_break_but_keep_the_title_with_its_bullets(self):
         text = EXAMPLE_CV.read_text(encoding="utf-8")
         self.assertRegex(
             text,
-            r"#let cventry\([^)]*\)\s*=\s*block\(breakable: false",
-            "cventry must stay unbreakable so a title is never orphaned from its bullets",
+            r"#let cventry\([^)]*\)\s*=\s*block\(breakable: true",
+            "cventry must be breakable so a long entry cannot leave a page-sized hole",
+        )
+        self.assertIn(
+            "block(sticky: true)[*#title*",
+            text,
+            "the title block must be sticky so a title is never orphaned from its bullets",
         )
 
     def test_example_cover_letter_uses_the_bullets_helper(self):

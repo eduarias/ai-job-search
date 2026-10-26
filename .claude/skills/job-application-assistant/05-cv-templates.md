@@ -33,7 +33,7 @@ Copy `cv/main_example.typ` and edit it. Its shape:
 #set text(font: ("Lato", "Liberation Sans", "DejaVu Sans"), size: 10.5pt, lang: "en")
 
 #let section(title) = ...   // accent-coloured heading with a rule, sticky to the next block
-#let cventry(dates, title, org, place, body) = block(breakable: false, ...)   // dates-left grid
+#let cventry(dates, title, org, place, body) = block(breakable: true, ...)    // dates-left grid; the title block is sticky
 
 // Personal data
 #align(center)[
@@ -183,7 +183,7 @@ After writing the CV and before presenting to the user, always compile and visua
 ### Fixing common page-break problems
 
 **Problem: entry title on page 1, bullets orphaned to page 2**
-The stock `cventry` helper is already `block(breakable: false)`, so a whole entry moves to the next page together. If an entry still splits (for example a hand-written entry that bypasses `cventry`), wrap it: `#block(breakable: false)[ ... ]`. The cost of an unbreakable entry is a hole at the bottom of the previous page, which `tools/verify_layout.py` reports; fix a hole by shortening the entry that follows it.
+The stock `cventry` helper is breakable: a long entry fills the page it starts on and continues on the next, and its title block is `sticky`, so the title always keeps at least its first bullets with it. That avoids both the orphaned title and the large hole an unbreakable entry leaves at the bottom of a page. A hand-written entry that bypasses `cventry` has no such protection: use the helper, or wrap the entry in `#block(sticky: true)` for its title line. To keep a short entry whole, wrap it in `#block(breakable: false)[ ... ]`; the cost is a hole at the bottom of the previous page, which `tools/verify_layout.py` reports, and the fix for a hole is to shorten the entry that follows it.
 
 **Problem: a section heading stranded at the bottom of a page**
 The `section` helper is a `sticky` block, which keeps it with the content after it. Keep that property in any custom heading.

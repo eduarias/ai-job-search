@@ -135,7 +135,7 @@ After creating or updating a CV or cover letter, re-read the generated file and 
 Both documents MUST be compiled and visually inspected via the Read tool on the PDF output. "Looks fine in the .typ" is not acceptable - page-break decisions are unpredictable. Iterate until these all pass:
 - [ ] CV compiled with `typst compile cv/main_<company>_<role>.typ`; cover letter compiled with `typst compile --font-path cover_letters/OpenFonts/fonts cover_letters/cover_<company>_<role>.typ`. If a custom template is active (registered via `/add-template`), compile with its declared command instead — see the `ACTIVE-TEMPLATE` block in `05-cv-templates.md`/`06-cover-letter-templates.md`.
 - [ ] **CV is exactly 2 pages** - not 1, not 3
-- [ ] **No orphaned entry titles** - a job/education title must never sit at the bottom of a page with its bullets spilling to the next page. The stock `cventry` helper is `block(breakable: false)`; wrap any hand-written entry the same way, and trim a line to rescue a trailing section that just barely spills
+- [ ] **No orphaned entry titles** - a job/education title must never sit at the bottom of a page with its bullets spilling to the next page. The stock `cventry` helper keeps a title with its first bullets (sticky title block); use it for every entry, and trim a line to rescue a trailing section that just barely spills
 - [ ] **Cover letter is exactly 1 page** - signature block must fit with the body, never overflow
 - [ ] **Cover letter bullet font matches body font** - use the `bullets(...)` helper from `cover.typ`; a bare `- item` list falls back to the default Lato body font
 

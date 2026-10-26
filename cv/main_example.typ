@@ -25,14 +25,16 @@
   ]
 }
 
-// One job/education entry. Unbreakable, so a title can never be orphaned at the
-// bottom of a page with its bullets on the next one.
-#let cventry(dates, title, org, place, body) = block(breakable: false, width: 100%)[
+// One job/education entry. Breakable, so a long entry fills the page it starts on
+// instead of jumping whole to the next one and leaving a hole. The title block is
+// sticky, which keeps it with the first bullets: a title is never left alone at the
+// bottom of a page. Wrap a short entry in #block(breakable: false) to keep it whole.
+#let cventry(dates, title, org, place, body) = block(breakable: true, width: 100%)[
   #grid(
     columns: (3.2cm, 1fr),
     column-gutter: 0.4cm,
     align(right, text(fill: accent, weight: "bold")[#dates]),
-    [*#title*, #emph[#org], #place #v(0.15em) #body],
+    [#block(sticky: true)[*#title*, #emph[#org], #place] #v(0.15em) #body],
   )
   #v(0.5em)
 ]

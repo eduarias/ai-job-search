@@ -7,12 +7,12 @@ checked by looking at the rendered page, which is exactly how they get missed. E
 failure below produces a clean compile, a correct page count, and a PDF that passes
 `tools/verify_pdf.py`:
 
-  orphaned entry      A Typst `cventry` is an unbreakable block, so a job entry is one
-                      unbreakable block. When it does not fit, the whole entry moves to
-                      the next page - or its header lands at the bottom of one page with
-                      the bullets resuming on the next. CLAUDE.md calls this "the most
-                      common failure".
-  internal hole       The space an ejected entry leaves behind. Observed in the wild at
+  orphaned entry      A job entry's header lands at the bottom of one page with the
+                      bullets resuming on the next. The stock Typst `cventry` prevents
+                      it (its title block is sticky), but a hand-written entry or a
+                      custom template may not. CLAUDE.md calls this "the most common
+                      failure".
+  internal hole       The space an ejected unbreakable block leaves behind. Observed in the wild at
                       273pt, roughly 19 blank lines, mid-page, on a document whose page
                       count was correct and whose visual read looked fine.
   page ends early     A non-final page that stops well short of the bottom.
@@ -425,8 +425,8 @@ def report(path: Path, pages: list[Page]) -> list[str]:
         if gap > GAP_LIMIT_PT:
             problems.append(
                 f"p{i} has a {gap:.0f}pt hole at y{gap_y:.0f} (~{gap / 14:.0f} blank lines). "
-                "A cventry is an unbreakable block: shorten the entry that "
-                "follows the hole so it fits, or move a shorter section above it"
+                "An unbreakable block did not fit and jumped to the next page: let it "
+                "break, shorten the block that follows the hole, or move a shorter section above it"
             )
         if i < len(pages) and share > BOTTOM_LIMIT_FRACTION:
             problems.append(

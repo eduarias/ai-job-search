@@ -267,7 +267,7 @@ The two `--pages` lines are the page-count check: exactly 2 pages for the CV and
 
 The layout script reports, per page, where the text starts and stops, bottom whitespace as a share of page height, and the largest vertical gap between lines. It exits 1 on: a hole over 100pt (~7 blank lines), a non-final page ending more than 25% early, body text colliding with the page-number footer, a final page more than 35% empty, and an entry header or section heading stranded at a page break. Page count is **not** checked here — that is `verify_pdf.py --pages`'s job, and the two `--pages` lines above run it.
 
-The hole check is the one a visual read misses. A `cventry` is a `block(breakable: false)`, so it is an **unbreakable block**: when it does not fit in the space left, the whole entry jumps to the next page and leaves a hole behind, while the document still compiles and still reports the right page count. Fix it by shortening the entry that follows the hole, not by stretching the page.
+The hole check is the one a visual read misses. The stock `cventry` splits across pages, so a hole mostly comes from a block wrapped in `#block(breakable: false)` (or a short heading-plus-entry pair) that did not fit in the space left: it jumps whole to the next page and leaves a hole behind, while the document still compiles and still reports the right page count. Fix it by shortening that block or letting it break, not by stretching the page.
 
 If Poppler is missing, or no `pdftotext` on PATH supports `-bbox` (Git for Windows ships an xpdf build without it), the script exits 2 with `skipped:` - note the degraded mode in the Step 6 report and rely on the visual inspection alone. Exit 2 is never a layout verdict.
 
@@ -290,7 +290,7 @@ Then read both PDFs via the Read tool and verify:
 
 If the layout has problems, edit the source files (`<CV_EXT>`/`<COVER_EXT>`) and recompile. Common fixes below are for the stock Typst templates — see `05-cv-templates.md` and `06-cover-letter-templates.md` for full details, and consult the active template's own manifest ("Known pitfalls") for a custom toolchain:
 
-- **Orphaned CV entry title:** wrap the entry in `#block(breakable: false)[ ... ]` (the stock `cventry` already is)
+- **Orphaned CV entry title:** use the stock `cventry` helper (its title block is sticky, so it stays with its first bullets); a hand-written entry needs `#block(sticky: true)` around its title line
 - **CV spills to page 3 with only a trailing section:** trim one line from page 2 or tighten one block with `#v(-3pt)`
 - **Substantial content on page 3:** cut content using **relevance-weighted cutting** (see `05-cv-templates.md` → "Relevance-weighted cutting"). Score each candidate line by (a) relevance to THIS posting's keywords and responsibilities, (b) uniqueness (is it duplicated elsewhere?), (c) narrative load (does the cover letter depend on it?). Cut the lowest-total-score line first, regardless of section. Do NOT mechanically apply a static section-based priority order — an older-role bullet that hits posting keywords is worth more than a recent-role bullet that does not.
 - **Cover letter bullets use the wrong font:** use the `bullets(...)` helper from `cover.typ` instead of a bare `- item` list
