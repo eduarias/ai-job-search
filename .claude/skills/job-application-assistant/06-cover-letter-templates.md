@@ -31,7 +31,7 @@ After writing the cover letter and before presenting to the user, always compile
 
 ### Bullet lists
 
-Use the `bullets(...)` helper from `cover.typ`: it takes one content argument per bullet and renders them in the same Raleway-Medium body font as `lettercontent`. A bare `- item` list outside the helper falls back to the default Lato body font and visually mismatches the rest of the letter.
+Start every letter with `#show: cover`: it sets lists in the same Raleway-Medium body font as `lettercontent`, so a plain `- item` list and the `bullets(...)` helper (one content argument per bullet) look identical. Without `#show: cover` the list falls back to the default Lato font and visibly mismatches the letter.
 
 ## Document Structure
 
@@ -80,7 +80,7 @@ The closing block is unbreakable so the signature can never be stranded on a sec
 | `#namesection(first, last, contact)` | Header with name and contact |
 | `#currentdate(date)` | Date field (use `datetime.today().display(...)` or an explicit date) |
 | `#lettercontent[text]` | Body paragraph (adds spacing after) |
-| `#bullets(..items)` | Bullet list in the body font |
+| `#bullets(..items)` | Bullet list in the body font (a plain `- item` list matches too under `#show: cover`) |
 | `#closing[text]` | Closing line |
 | `#signature[name]` | Printed name below the closing |
 
@@ -103,7 +103,7 @@ The closing block is unbreakable so the signature can never be stranded on a sec
 - Use `#v(6pt)` between blocks only if space permits
 
 ### Bullet Lists
-- Use the `bullets(...)` helper (see "Bullet lists" above) so the bullet font matches the body
+- Use a plain `- item` list or the `bullets(...)` helper; both match the body font under `#show: cover` (see "Bullet lists" above)
 - 3-5 bullets is ideal
 - Start each bullet with bold label or action verb
 - Use `*Label:*` for category-style bullets

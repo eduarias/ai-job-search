@@ -58,10 +58,13 @@ class TestExampleDocumentsExist(unittest.TestCase):
             "the title block must be sticky so a title is never orphaned from its bullets",
         )
 
-    def test_example_cover_letter_uses_the_bullets_helper(self):
+    def test_cover_template_sets_list_text_in_the_body_font(self):
+        text = (REPO / "cover_letters" / "cover.typ").read_text(encoding="utf-8")
+        self.assertIn("show list: set text(..body-font)", text, "a plain list must match the body font")
+
+    def test_example_cover_letter_starts_with_show_cover(self):
         text = EXAMPLE_COVER.read_text(encoding="utf-8")
-        self.assertIn("#bullets(", text)
-        self.assertNotRegex(text, r"(?m)^- ", "bare lists lose the Raleway body font")
+        self.assertIn("#show: cover", text)
 
 
 class TestSpecialCharacterGuidance(unittest.TestCase):

@@ -284,7 +284,7 @@ Then read both PDFs via the Read tool and verify:
 **Cover letter (`cover_letters/cover_<company>_<role>.pdf`):**
 - [ ] Exactly 1 page
 - [ ] Signature block visible, not cut off or pushed to a second page
-- [ ] Bullet list font matches surrounding body text (both should be Raleway-Medium, via the `bullets(...)` helper)
+- [ ] Bullet list font matches surrounding body text (both should be Raleway-Medium; this holds when the letter starts with `#show: cover`)
 
 ### 5c. Iterate until clean
 
@@ -293,7 +293,7 @@ If the layout has problems, edit the source files (`<CV_EXT>`/`<COVER_EXT>`) and
 - **Orphaned CV entry title:** use the stock `cventry` helper (its title block is sticky, so it stays with its first bullets); a hand-written entry needs `#block(sticky: true)` around its title line
 - **CV spills to page 3 with only a trailing section:** trim one line from page 2 or tighten one block with `#v(-3pt)`
 - **Substantial content on page 3:** cut content using **relevance-weighted cutting** (see `05-cv-templates.md` → "Relevance-weighted cutting"). Score each candidate line by (a) relevance to THIS posting's keywords and responsibilities, (b) uniqueness (is it duplicated elsewhere?), (c) narrative load (does the cover letter depend on it?). Cut the lowest-total-score line first, regardless of section. Do NOT mechanically apply a static section-based priority order — an older-role bullet that hits posting keywords is worth more than a recent-role bullet that does not.
-- **Cover letter bullets use the wrong font:** use the `bullets(...)` helper from `cover.typ` instead of a bare `- item` list
+- **Cover letter bullets use the wrong font:** the letter is missing `#show: cover` (it sets list text in Raleway); add it, or use the `bullets(...)` helper from `cover.typ`
 - **Cover letter spills to 2 pages:** trim using the same relevance-weighted logic. First cut: sentences that restate what a bullet already said. Second cut: a bullet that does not hit posting keywords. Last resort: a bullet that does hit posting keywords. Never reduce geometry or line spacing.
 
 Do not proceed to Step 6 until both PDFs pass inspection.

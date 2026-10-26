@@ -137,7 +137,7 @@ Both documents MUST be compiled and visually inspected via the Read tool on the 
 - [ ] **CV is exactly 2 pages** - not 1, not 3
 - [ ] **No orphaned entry titles** - a job/education title must never sit at the bottom of a page with its bullets spilling to the next page. The stock `cventry` helper keeps a title with its first bullets (sticky title block); use it for every entry, and trim a line to rescue a trailing section that just barely spills
 - [ ] **Cover letter is exactly 1 page** - signature block must fit with the body, never overflow
-- [ ] **Cover letter bullet font matches body font** - use the `bullets(...)` helper from `cover.typ`; a bare `- item` list falls back to the default Lato body font
+- [ ] **Cover letter bullet font matches body font** - the letter must start with `#show: cover`, which sets lists in the Raleway body font; the `bullets(...)` helper does the same and also works outside it
 
 ### ATS & keyword verification (CV)
 ATS parsers read the PDF's embedded text layer, not the rendered page. Extract it with `python3 tools/verify_pdf.py cv/main_<company>_<role>.pdf --dump-text cv/main_<company>_<role>.txt` (pypdf, then `pdftotext -layout -enc UTF-8`) and verify what a parser sees. If both extractors are missing, skip the parseability items with a warning and check keyword coverage from the visual PDF read instead.

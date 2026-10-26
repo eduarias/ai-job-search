@@ -14,6 +14,9 @@
   set text(font: "Lato", weight: "light", fill: primary, size: 11pt, lang: "en")
   set par(leading: 0.65em, spacing: 1.2em, justify: false)
   set list(indent: 0.4em, body-indent: 0.6em, spacing: 0.6em)
+  // Lists use the same Raleway body font as lettercontent, so a plain `- item` list
+  // matches the letter without the bullets() helper.
+  show list: set text(..body-font)
   body
 }
 
@@ -31,7 +34,8 @@
 // Body paragraph / closing / signature all share the Raleway-Medium body font.
 #let lettercontent(c) = [#text(..body-font)[#c] #parbreak()]
 
-// Bullet list in the body font (matches lettercontent).
+// Bullet list in the body font. Kept for explicitness and for use outside `#show: cover`;
+// inside it a plain `- item` list gets the same font from the show rule above.
 #let bullets(..items) = text(..body-font, list(..items.pos()))
 
 #let closing(c) = align(right, text(..body-font)[#c])

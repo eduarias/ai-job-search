@@ -85,7 +85,7 @@ Collect:
    - **System / distribution fonts**: record the font name and note that the user's machine must have it installed.
 5. **Style rules** - anything the drafter must preserve when filling the template: color scheme, section order, heading style, spacing conventions, bullet formatting, date format.
 6. **Page limit** - hard page count for the compiled PDF. Default: **2 pages** for a CV, **1 page** for a cover letter. `/apply`'s compile-and-inspect loop enforces this.
-7. **Known pitfalls** (optional) - macros/rules that break with certain content (like a bare list falling back to the wrong font in the stock cover letter), characters that need escaping, sections that must not be reordered.
+7. **Known pitfalls** (optional) - macros/rules that break with certain content (like a list falling back to the wrong font), characters that need escaping, sections that must not be reordered.
 
 ---
 
