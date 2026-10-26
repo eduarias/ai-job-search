@@ -1,8 +1,8 @@
-# CI for the framework itself: LaTeX smoke compiles, skill/command lint,
+# CI for the framework itself: Typst smoke compiles, skill/command lint,
 # CLI typechecks, and (upstream only) placeholder integrity.
 #
 # Fork-friendly by design: forks personalize CLAUDE.md, the skill files, and
-# cv/main_example.tex via /setup, so the placeholder-integrity job and the
+# cv/main_example.typ via /setup, so the placeholder-integrity job and the
 # exact page-count/content assertions run only on the upstream template repo.
 # Compile success, lint correctness, and an extractable PDF text layer are
 # asserted everywhere.
@@ -137,78 +137,58 @@ jobs:
         with:
           fail-on-severity: high
 
-  latex-smoke:
-    # Two legs. texlive/texlive:latest tracks current TeX Live (moderncv 2.5+);
-    # debian:bookworm compiles on apt-packaged TeX Live 2022 with moderncv
-    # 2.3.1 - the environment #242 hit and the one texlive:latest can never
-    # catch a regression in, because it never shipped the old class. The
-    # README's Linux setup path is apt, so both ends of the moderncv range
-    # users actually have stay compiled.
-    name: Compile example CV and cover letter (${{ matrix.leg.name }})
+  typst-smoke:
+    name: Compile example CV and cover letter (Typst)
     runs-on: ubuntu-latest
-    container: ${{ matrix.leg.container }}
-    strategy:
-      fail-fast: false
-      matrix:
-        leg:
-          - name: texlive-latest
-            container: texlive/texlive:latest
-          - name: debian-bookworm
-            container: debian:bookworm
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
-      - name: Install apt-packaged TeX Live (bookworm leg)
-        if: matrix.leg.name == 'debian-bookworm'
-        # --no-install-recommends keeps the leg lean, so the two font packages
-        # must then be named explicitly: moderncv loads fontawesome5, which apt
-        # ships in texlive-fonts-extra (lualatex dies fatally without it), and
-        # hyperref's xetex driver probes the pzdr metrics from
-        # texlive-fonts-recommended (the cover letter fails without it).
+      - name: Install Typst
+        # Pinned release binary, checksum-verified before it is extracted. Typst is a
+        # single static executable; it goes in RUNNER_TEMP because the runner user
+        # cannot write to /usr/local/bin. The digest is the release asset's sha256
+        # from the GitHub releases API; update it together with TYPST_VERSION.
+        env:
+          TYPST_VERSION: v0.15.1
+          TYPST_SHA256: a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends \
-            texlive-luatex texlive-latex-extra texlive-xetex \
-            texlive-fonts-extra texlive-fonts-recommended \
-            poppler-utils python3
+          archive="$RUNNER_TEMP/typst.tar.xz"
+          curl -fsSL -o "$archive" "https://github.com/typst/typst/releases/download/${TYPST_VERSION}/typst-x86_64-unknown-linux-musl.tar.xz"
+          echo "${TYPST_SHA256}  ${archive}" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/typst-bin"
+          tar -xJf "$archive" --strip-components=1 -C "$RUNNER_TEMP/typst-bin" typst-x86_64-unknown-linux-musl/typst
+          echo "$RUNNER_TEMP/typst-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/typst-bin/typst" --version
       - name: Install PDF inspection tools
         run: |
           if ! command -v pdfinfo >/dev/null || ! command -v pdftotext >/dev/null; then
-            apt-get update
-            apt-get install -y --no-install-recommends poppler-utils
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends poppler-utils
           fi
-      - name: Compile CV example (lualatex)
-        run: |
-          cd cv
-          lualatex -interaction=nonstopmode -halt-on-error main_example.tex
-          test -f main_example.pdf
-          if grep -q '^!' main_example.log; then
-            echo '::error::lualatex reported errors compiling cv/main_example.tex'
-            grep -A3 '^!' main_example.log
-            exit 1
-          fi
-      - name: Compile cover letter example (xelatex)
-        run: |
-          cd cover_letters
-          xelatex -interaction=nonstopmode -halt-on-error cover_example.tex
-          test -f cover_example.pdf
-          if grep -q '^!' cover_example.log; then
-            echo '::error::xelatex reported errors compiling cover_letters/cover_example.tex'
-            grep -A3 '^!' cover_example.log
-            exit 1
-          fi
+      - name: Compile CV example
+        run: typst compile --font-path cover_letters/OpenFonts/fonts cv/main_example.typ
+      - name: Compile cover letter example
+        run: typst compile --font-path cover_letters/OpenFonts/fonts cover_letters/cover_example.typ
       - name: Verify extractable PDF text
         run: |
           python3 tools/verify_pdf.py cv/main_example.pdf --min-chars 100
           python3 tools/verify_pdf.py cover_letters/cover_example.pdf --min-chars 100
+      - name: Full-length CV holds 2 pages; cover letter name is centred (upstream template only)
+        if: github.repository == 'ai-job-search-dev/ai-job-search'
+        # The placeholder CV is one page, so it cannot see a regression in the real
+        # two-page format. This fills the template with realistic content first. It
+        # splices the stock CV between fixed markers, which a fork's /setup rewrites,
+        # so like the structure check below it only runs on the upstream template.
+        run: python3 -m unittest tests.test_typst_two_page_cv tests.test_typst_cover_letter -v
       - name: Assert stock PDF structure (upstream template only)
         if: github.repository == 'ai-job-search-dev/ai-job-search'
+        # The placeholder CV is short; the full-length 2-page check is the step above.
         run: |
           python3 tools/verify_pdf.py cv/main_example.pdf \
-            --pages 2 \
+            --pages 1 \
             --ascii-dates \
-            --contains '[your.email@example.com]' \
+            --contains 'your.email@example.com' \
             --contains 'Professional Experience' \
             --contains 'Achievement'
           python3 tools/verify_pdf.py cover_letters/cover_example.pdf \
@@ -285,9 +265,9 @@ jobs:
             fi
           }
           check CLAUDE.md '\[YOUR_NAME\]'
-          check cv/main_example.tex '\\name{\[First\]}{\[Last\]}'
-          check cv/main_example.tex '\\email{\[your\.email@example\.com\]}'
-          check cover_letters/cover_example.tex '\[YOUR NAME\]'
+          check cv/main_example.typ '\\\[First\\\] \\\[Last\\\]'
+          check cv/main_example.typ 'mailto:your\.email@example\.com'
+          check cover_letters/cover_example.typ '\[YOUR NAME\]'
           check .claude/skills/job-application-assistant/01-candidate-profile.md '\[YOUR_EMAIL\]'
           check .claude/skills/job-application-assistant/04-job-evaluation.md '\[YOUR_PRIMARY_SKILLS\]'
           exit $fail

@@ -2,8 +2,8 @@
 
 The command is a markdown spec (the spec IS the implementation). These tests pin
 one invariant that broke silently: Step 3 must personalise every contact block
-that `/apply` later compiles into a document. `cv/main_example.tex` was covered;
-the LaTeX blocks embedded in `05-cv-templates.md` and `06-cover-letter-templates.md`
+that `/apply` later compiles into a document. `cv/main_example.typ` was covered;
+the Typst blocks embedded in `05-cv-templates.md` and `06-cover-letter-templates.md`
 were not, so a full Path B/C run left `[YOUR_NAME]`, `[YOUR_EMAIL]` and
 `[YOUR_PHONE]` in both, and whether they reached a compiled cover letter depended
 on the drafter noticing. A real user (#420) ran `/setup` and then hand-edited both
@@ -90,7 +90,7 @@ class TemplatesStillCarryThePlaceholders(unittest.TestCase):
         text = COVER_TEMPLATES.read_text(encoding="utf-8")
         for token in ("[YOUR_NAME]", "[YOUR_EMAIL]", "[YOUR_PHONE]", "[YOUR_LINKEDIN_URL]"):
             self.assertIn(token, text)
-        self.assertIn("\\signature{[YOUR_NAME]}", text)
+        self.assertIn("#signature[[YOUR_NAME]]", text)
 
 
 class SetupPathAWritesIntoSectionsTheShippedFilesHave(unittest.TestCase):

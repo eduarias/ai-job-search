@@ -6,12 +6,12 @@ then Poppler `pdftotext` if pypdf is missing, raises, or returns zero
 extractable characters. Poppler remains the fallback.
 
 `--contains` compares after `normalize_text()` has folded both sides: whitespace,
-Unicode normalization form (NFC), and the typographic substitutions LaTeX makes to
+Unicode normalization form (NFC), and the typographic substitutions Typst (and LaTeX) make to
 the source text. The fold is comparison-time only - the `--dump-text` output stays
 the raw text layer an ATS parser actually sees.
 
 `--ascii-dates` is the one check that deliberately does NOT fold: it scans the raw
-layer for a year joined to a Unicode dash - the en-dash LaTeX makes from `--`, which
+layer for a year joined to a Unicode dash - the en-dash Typst makes from `--`, which
 a Workday import dropped along with the date (`05-cv-templates.md`, "Date fields
 must be ASCII ranges") - and fails naming each hit with its code point.
 """
@@ -58,8 +58,8 @@ def parse_page_count(pdfinfo_output):
     return int(match.group(1))
 
 
-# Typographic substitutions the moderncv/cover.cls templates produce from plain
-# source text, mapped back to what a user types into --contains. LaTeX ligatures
+# Typographic substitutions the stock templates produce from plain
+# source text, mapped back to what a user types into --contains. Typst/LaTeX ligatures
 # ' into U+2019 and -- into U+2013, so "Master's degree" and "2016-2024" are
 # absent from the text layer of a CV that plainly contains them (#385). Applied
 # to both sides of the comparison; the extracted dump is never rewritten.
@@ -69,7 +69,7 @@ TYPOGRAPHIC_FOLDS = str.maketrans(
         "\u2019": "'",  # ' -> quoteright (the possessive apostrophe)
         "\u201c": '"',  # `` -> quotedblleft
         "\u201d": '"',  # '' -> quotedblright
-        "\u2013": "-",  # -- -> endash (the \cventry date-range case)
+        "\u2013": "-",  # -- -> endash (the cventry date-range case)
         "\u2014": "-",  # --- -> emdash
         "\u00a0": " ",  # ~ -> no-break space
     }
@@ -295,7 +295,7 @@ def build_parser():
         default=[],
         help=(
             "text that must appear in the text layer; both sides are folded for "
-            "whitespace, NFC, and LaTeX's typographic substitutions (curly "
+            "whitespace, NFC, and typographic substitutions (curly "
             "apostrophes/quotes, en/em dashes, no-break spaces); repeatable"
         ),
     )
@@ -309,7 +309,7 @@ def build_parser():
         action="store_true",
         help=(
             "fail if the raw text layer has a year joined to a Unicode dash (the "
-            "en-dash LaTeX makes from --), which ATS date parsers drop; this check "
+            "en-dash Typst makes from --), which ATS date parsers drop; this check "
             "never folds, unlike --contains"
         ),
     )

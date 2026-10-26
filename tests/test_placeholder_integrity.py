@@ -3,7 +3,7 @@
 The job exists to catch personal data committed to the upstream template.
 That only works when each sentinel sits IN the data /setup replaces: the
 CV's old sentinel was `[YOUR_NAME]`, whose only occurrences were a header
-comment and the hyperref pdftitle - /setup's documented edit ("replace
+comment and the document title - /setup's documented edit ("replace
 placeholder personal data with their actual name, contact info") touches
 neither, so a fully personalized CV with a real name, address, phone and
 email passed the check (review finding F28, 2026-08-19; proven
@@ -25,24 +25,25 @@ except ImportError:  # `python -m unittest discover -s tests` imports test modul
 
 REPO = Path(__file__).resolve().parent.parent
 CI = REPO / ".github" / "workflows" / "ci.yml"
-EXAMPLE_CV = REPO / "cv" / "main_example.tex"
+EXAMPLE_CV = REPO / "cv" / "main_example.typ"
 PROFILE = REPO / ".claude" / "skills" / "job-application-assistant" / "01-candidate-profile.md"
 
 # The literal sentinel strings (unescaped) that ci.yml's grep patterns match.
-CV_SENTINELS = ["\\name{[First]}{[Last]}", "\\email{[your.email@example.com]}"]
+CV_SENTINELS = ["\\[First\\] \\[Last\\]", "mailto:your.email@example.com"]
 PROFILE_SENTINEL = "[YOUR_EMAIL]"
 
 
 def personalize_cv(text: str) -> str:
     """Apply /setup Step 3.8's documented edit: replace placeholder personal
-    data with a real name and contact info. Header comments and hyperref
+    data with a real name and contact info. Header comments and document
     metadata are not personal data, so they are deliberately left alone -
     that is exactly why a comment-located sentinel guards nothing."""
     return (
-        text.replace("\\name{[First]}{[Last]}", "\\name{Jane}{Doe}")
+        text.replace("\\[First\\] \\[Last\\]", "Jane Doe")
         .replace("[Your Address, City, Country]", "Some Street 1, Aarhus, Denmark")
         .replace("[+XX XXXXXXXXXX]", "+45 12345678")
-        .replace("[your.email@example.com]", "jane.doe@example.org")
+        .replace("your.email@example.com", "jane.doe@example.org")
+        .replace("your.email\\@example.com", "jane.doe\\@example.org")
     )
 
 
@@ -57,14 +58,14 @@ class TestCvSentinelsAreDataLocated(unittest.TestCase):
 
     def test_ci_checks_the_name_and_email_data_lines(self):
         self.assertIn(
-            "check cv/main_example.tex '\\\\name{\\[First\\]}{\\[Last\\]}'",
+            "check cv/main_example.typ '\\\\\\[First\\\\\\] \\\\\\[Last\\\\\\]'",
             self.ci,
-            "ci.yml must assert the sentinel inside the \\name{} data line",
+            "ci.yml must assert the sentinel inside the name data line",
         )
         self.assertIn(
-            "check cv/main_example.tex '\\\\email{\\[your\\.email@example\\.com\\]}'",
+            "check cv/main_example.typ 'mailto:your\\.email@example\\.com'",
             self.ci,
-            "ci.yml must assert the sentinel inside the \\email{} data line",
+            "ci.yml must assert the sentinel inside the email data line",
         )
 
     def test_pristine_cv_carries_both_sentinels(self):

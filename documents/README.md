@@ -8,7 +8,7 @@ This folder holds your actual career documents. The `/setup` command reads every
 
 ```
 documents/
-├── cv/                          # Your CV files (PDF or LaTeX)
+├── cv/                          # Your CV files (PDF, Typst or LaTeX)
 ├── linkedin/                    # LinkedIn profile export (PDF)
 ├── diplomas/                    # Degree certificates and transcripts
 ├── references/                  # Reference letters
@@ -18,8 +18,8 @@ documents/
 ├── applications/                # Past job applications
 │   └── <company>_<role>/
 │       ├── job_posting.md       # The original job posting (written by /apply, or pasted)
-│       ├── cover_letter.tex     # The cover letter you submitted
-│       ├── cv_draft.tex         # The CV variant you submitted
+│       ├── cover_letter.typ     # The cover letter you submitted
+│       ├── cv_draft.typ         # The CV variant you submitted
 │       └── outcome.md           # Result + notes (fill in after hearing back)
 └── README.md                    # This file
 ```
@@ -30,7 +30,7 @@ documents/
 
 Your master CV — the most complete, unedited version of your professional record.
 
-**Supported formats:** `.pdf`, `.tex`
+**Supported formats:** `.pdf`, `.typ`, `.tex`
 
 **What `/setup` extracts:**
 - Work experience (titles, companies, dates, bullet points)
@@ -154,9 +154,9 @@ applications/
 
 **`job_posting.md`** — The full job posting text, written by `/apply`, or paste it here. Used by `/setup` to infer which skills and role types you have targeted, and to calibrate `04-job-evaluation.md`.
 
-**`cover_letter.tex`** — The cover letter you actually submitted. Used to extract writing style patterns and structure for `06-cover-letter-templates.md`.
+**`cover_letter.typ`** — The cover letter you actually submitted. Used to extract writing style patterns and structure for `06-cover-letter-templates.md`.
 
-**`cv_draft.tex`** — The CV variant you submitted. Used to extract profile statement styles for `05-cv-templates.md`.
+**`cv_draft.typ`** — The CV variant you submitted. Used to extract profile statement styles for `05-cv-templates.md`.
 
 **`outcome.md`** — Fill this in after the application resolves. Format:
 
@@ -196,6 +196,7 @@ Application folders may also contain **`interview_prep_<stage>.md`** files writt
 | Format | Readable by `/setup` | Notes |
 |--------|--------------------------|-------|
 | `.pdf` | Yes | Parsed directly with the Read tool |
+| `.typ` | Yes | Typst source — structure and content both readable |
 | `.tex` | Yes | LaTeX source — structure and content both readable |
 | `.md` | Yes | Plain text |
 | `.txt` | Yes | Plain text |
