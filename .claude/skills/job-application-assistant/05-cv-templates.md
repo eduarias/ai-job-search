@@ -11,13 +11,13 @@ framework_version: 1.4.8
 All CVs use a single Typst file with a blue accent colour, a centred name block, ruled section headings and a dates-left entry grid.
 
 **Output file:** `cv/main_<company>_<role>.typ`
-**Compile with:** `typst compile` from the repo root (a single binary; no TeX distribution needed).
+**Compile with:** `typst compile` from the repo root with the bundled fonts on the font path (a single binary; no TeX distribution needed). Without `--font-path` the CV silently falls back to a different font on machines without Lato, which changes line breaks and the page count.
 **Master reference:** `cv/main_example.typ` (comprehensive CV with all competencies, experience, and achievements - use as source when building targeted CVs)
 
 ### Compile command
 
 ```bash
-typst compile cv/main_<company>_<role>.typ
+typst compile --font-path cover_letters/OpenFonts/fonts cv/main_<company>_<role>.typ
 ```
 
 The PDF lands next to the source. Verify the page count with `python3 tools/verify_pdf.py cv/main_<company>_<role>.pdf --pages 2`; any count other than 2 is a failure that must be fixed before presenting to the user. A snap-installed Typst cannot write outside the home directory, so keep output inside the repo.
@@ -175,7 +175,7 @@ Postings and profile data arrive as plain text; the CV is Typst markup. Escape t
 
 After writing the CV and before presenting to the user, always compile and visually inspect the PDF. Iterate until the layout is clean. Workflow:
 
-1. Run `typst compile cv/main_<company>_<role>.typ`
+1. Run `typst compile --font-path cover_letters/OpenFonts/fonts cv/main_<company>_<role>.typ`
 2. Check the page count: must be exactly 2 (`python3 tools/verify_pdf.py <pdf> --pages 2`)
 3. Read the PDF via the Read tool and visually inspect both pages
 4. Check for **orphaned entries**: a job/education title line must never sit alone at the bottom of page 1 with its bullets on page 2

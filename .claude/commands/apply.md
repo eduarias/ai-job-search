@@ -243,7 +243,7 @@ After all edits are applied, the two files on disk are the final drafts.
 Use `<CV_COMPILE>` and `<COVER_COMPILE>` resolved in Step 2 (the active template's declared compile command, or the stock defaults below if no custom template is active):
 
 ```bash
-typst compile cv/main_<company>_<role>.typ
+typst compile --font-path cover_letters/OpenFonts/fonts cv/main_<company>_<role>.typ
 typst compile --font-path cover_letters/OpenFonts/fonts cover_letters/cover_<company>_<role>.typ
 ```
 

@@ -54,7 +54,7 @@ Check it works from the repo root:
 
 ```bash
 typst --version
-typst compile cv/main_example.typ
+typst compile --font-path cover_letters/OpenFonts/fonts cv/main_example.typ
 typst compile --font-path cover_letters/OpenFonts/fonts cover_letters/cover_example.typ
 ```
 
@@ -197,7 +197,7 @@ Claude will:
 After `/apply` creates the Typst files:
 
 ```bash
-typst compile cv/main_<company>_<role>.typ
+typst compile --font-path cover_letters/OpenFonts/fonts cv/main_<company>_<role>.typ
 typst compile --font-path cover_letters/OpenFonts/fonts cover_letters/cover_<company>_<role>.typ
 ```
 

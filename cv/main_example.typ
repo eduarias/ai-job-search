@@ -3,7 +3,7 @@
 // Use as a master reference when tailoring role-specific CVs.
 //
 // SETUP: Run /setup to populate this with your actual information.
-// Compile from the repo root: typst compile cv/main_example.typ
+// Compile from the repo root: typst compile --font-path cover_letters/OpenFonts/fonts cv/main_example.typ
 
 #let accent = rgb("#3973af") // moderncv "blue"
 

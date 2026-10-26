@@ -132,7 +132,7 @@ class TestNoStaleLatexGuidance(unittest.TestCase):
 
     def test_apply_stock_defaults_use_typst(self):
         text = APPLY.read_text(encoding="utf-8")
-        self.assertIn("typst compile cv/main_<company>_<role>.typ", text)
+        self.assertIn("typst compile --font-path cover_letters/OpenFonts/fonts cv/main_<company>_<role>.typ", text)
 
 
 if __name__ == "__main__":

@@ -159,7 +159,7 @@ jobs:
             sudo apt-get install -y --no-install-recommends poppler-utils
           fi
       - name: Compile CV example
-        run: typst compile cv/main_example.typ
+        run: typst compile --font-path cover_letters/OpenFonts/fonts cv/main_example.typ
       - name: Compile cover letter example
         run: typst compile --font-path cover_letters/OpenFonts/fonts cover_letters/cover_example.typ
       - name: Verify extractable PDF text
